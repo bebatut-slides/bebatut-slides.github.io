@@ -1,23 +1,43 @@
-# Settings
+CONDA_ENV = slides
+SHELL=bash
+
+CONDA = $(shell which conda)
+ifeq ($(CONDA),)
+	CONDA=${HOME}/miniconda3/bin/conda
+endif
 
 default: help
 
-clean: ## clean up junk files
+clean: ## cleanup the project
 	@rm -rf _site
 	@rm -rf .sass-cache
 	@rm -rf .bundle
 	@rm -rf vendor
 .PHONY: clean
 
+create-env: ## create conda environment
+	if ${CONDA} env list | grep '^${CONDA_ENV}'; then \
+	    ${CONDA} env update -f environment.yml; \
+	else \
+	    ${CONDA} env create -f environment.yml; \
+	fi
+.PHONY: create-env
+
+ACTIVATE_ENV = source $(dir ${CONDA})activate ${CONDA_ENV}
+COND_ENV_DIR=$(shell dirname $(dir $(CONDA)))
 install: clean ## install dependencies
-	git submodule init && \
-	git submodule update && \
-	gem install bundler && \
-	bundle install
+	$(ACTIVATE_ENV) && \
+		gem update --no-document --system && \
+		gem install bundler && \
+		pushd ${COND_ENV_DIR}/envs/${CONDA_ENV}/share/rubygems/bin && \
+		ln -sf ../../../bin/ruby ruby && \
+		popd && \
+		bundle install && \
 .PHONY: install
 
-serve: ## run a local server (You can specify PORT=, HOST=, and FLAGS= to set the port, host or to pass additional flags)
-	bundle exec jekyll serve
+serve: ## run a local server
+	$(ACTIVATE_ENV) && \
+		bundle exec jekyll serve
 .PHONY: serve
 
 help:
